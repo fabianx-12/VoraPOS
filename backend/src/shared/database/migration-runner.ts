@@ -5,7 +5,7 @@ import { join } from 'node:path';
 export class MigrationRunner {
   constructor(private readonly db: Database) {}
 
-  public runMigrations(migrationsDir = 'database/migrations'): void {
+  public runMigrations(migrationsDir = 'database/sqlite/migrations'): void {
     // 1. Ensure migration tracking table exists
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS schema_migrations (

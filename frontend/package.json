@@ -1,0 +1,32 @@
+{
+  "name": "vorapos-frontend",
+  "version": "1.0.0",
+  "description": "VoraPOS Desktop User Interface - Electron & React Touchscreen POS Terminal",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": [
+    "pos-frontend",
+    "touchscreen-ui",
+    "retail-pos",
+    "electron-renderer"
+  ],
+  "author": "Fabianx-12 <fabic7550@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.475.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0"
+  }
+}

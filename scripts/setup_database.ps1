@@ -38,11 +38,11 @@ if (-not $sqliteCmd) {
 }
 
 Write-Host "--> Applying Migration: v1.0.0_initial_schema.sql" -ForegroundColor Green
-Get-Content "database/migrations/v1.0.0_initial_schema.sql" | & $sqliteCmd $DatabasePath
+Get-Content "database/sqlite/migrations/v1.0.0_initial_schema.sql" | & $sqliteCmd $DatabasePath
 
 if ($WithSeeds) {
     Write-Host "--> Seeding Baseline Data: master_seed.sql" -ForegroundColor Green
-    Get-Content "database/seeds/master_seed.sql" | & $sqliteCmd $DatabasePath
+    Get-Content "database/sqlite/seeds/master_seed.sql" | & $sqliteCmd $DatabasePath
 }
 
 Write-Host "==> Database successfully bootstrapped!" -ForegroundColor Cyan

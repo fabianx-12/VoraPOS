@@ -28,7 +28,7 @@ async function bootstrap(): Promise<void> {
 
   // 2. Execute Pending Migrations
   const migrationRunner = new MigrationRunner(db);
-  migrationRunner.runMigrations('database/migrations');
+  migrationRunner.runMigrations('database/sqlite/migrations');
 
   // 3. Instantiate Unit of Work & Repositories
   const uow = new SQLiteUnitOfWork(db);

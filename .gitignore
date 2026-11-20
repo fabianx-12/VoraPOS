@@ -1,16 +1,39 @@
-# SQLite database and WAL journal files
+# ─── Node.js ──────────────────────────────────────────────────────────────────
+node_modules/
+dist/
+build/
+*.js.map
+
+# ─── Environment variables (never commit secrets) ─────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ─── TypeScript build artifacts ───────────────────────────────────────────────
+*.tsbuildinfo
+
+# ─── SQLite database and WAL journal files ────────────────────────────────────
 *.db
 *.db-wal
 *.db-shm
 *.sqlite
 *.sqlite3
 
-# OS generated files
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+
+# ─── Test coverage ────────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ─── OS generated files ───────────────────────────────────────────────────────
 Thumbs.db
 Desktop.ini
 .DS_Store
 
-# IDE and editor settings
+# ─── IDE and editor settings ──────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp

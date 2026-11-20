@@ -29,8 +29,8 @@ describe('CreateSaleUseCase Integration with Atomic SQLite UnitOfWork', () => {
     db.pragma('foreign_keys = ON');
 
     // 2. Load schema and seed migrations
-    const schemaSql = readFileSync('database/migrations/v1.0.0_initial_schema.sql', 'utf-8');
-    const seedSql = readFileSync('database/seeds/master_seed.sql', 'utf-8');
+    const schemaSql = readFileSync('database/sqlite/migrations/v1.0.0_initial_schema.sql', 'utf-8');
+    const seedSql = readFileSync('database/sqlite/seeds/master_seed.sql', 'utf-8');
     db.exec(schemaSql);
     db.exec(seedSql);
 

@@ -17,9 +17,9 @@ if ! command -v sqlite3 &> /dev/null; then
 fi
 
 echo "--> Applying Migration: v1.0.0_initial_schema.sql"
-sqlite3 "${DB_PATH}" < "database/migrations/v1.0.0_initial_schema.sql"
+sqlite3 "${DB_PATH}" < "database/sqlite/migrations/v1.0.0_initial_schema.sql"
 
 echo "--> Seeding Baseline Data: master_seed.sql"
-sqlite3 "${DB_PATH}" < "database/seeds/master_seed.sql"
+sqlite3 "${DB_PATH}" < "database/sqlite/seeds/master_seed.sql"
 
 echo "==> Database successfully bootstrapped at ${DB_PATH}!"
