@@ -1,0 +1,44 @@
+{
+  "name": "vorapos-backend",
+  "version": "1.0.0",
+  "description": "Production offline-first Point of Sale (POS) backend core with Clean Architecture and better-sqlite3",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": [
+    "pos",
+    "point-of-sale",
+    "offline-first",
+    "clean-architecture",
+    "better-sqlite3",
+    "typescript",
+    "kardex",
+    "outbox-pattern"
+  ],
+  "author": "Fabianx-12 <fabic7550@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.2.1",
+    "@fastify/cors": "^10.0.2",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0",
+    "uuid": "^11.1.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.13.4",
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.6"
+  }
+}

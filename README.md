@@ -1,93 +1,135 @@
-# VoraPOS - Production Offline-First POS SQLite Database
+# VoraPOS - Production Offline-First POS Backend Core
 
-Production-grade, offline-first relational database architecture for the **VoraPOS** desktop Point of Sale system. Designed for extreme reliability, multi-terminal concurrency, strict financial precision, append-only inventory auditing (Kardex), and resilient bi-directional cloud replication to PostgreSQL.
+Production-grade, offline-first backend engine and relational database architecture for the **VoraPOS** desktop Point of Sale system. Designed following **Clean Architecture** and **Feature-Based Modularity** (Domain-Driven Boundaries).
 
 ---
 
-## 🗂️ Project Structure
+## 🗂️ Complete Project Hierarchy
 
-```
+```text
 VoraPOS/
+├── package.json                         # Node.js project manifest & dependencies
+├── tsconfig.json                        # TypeScript strict mode configuration
+├── src/
+│   ├── config/                          # Centralized environment, database pragmas & hardware settings
+│   │   ├── env.config.ts                # Zod-validated environment runtime configuration
+│   │   ├── database.config.ts           # SQLite WAL, cache size, and busy_timeout tuning
+│   │   └── hardware.config.ts           # ESC/POS printer & RJ11 cash drawer pulse timings
+│   ├── shared/                          # Cross-cutting concerns (zero business logic)
+│   │   ├── types/                       # Branded types (UUID, Cents, BasisPoints), Result/Either pattern
+│   │   │   ├── branded.types.ts
+│   │   │   ├── result.types.ts
+│   │   │   └── pagination.types.ts
+│   │   ├── errors/                      # Explicit Domain and Infrastructure error classes
+│   │   │   ├── domain.error.ts
+│   │   │   └── error-codes.enum.ts
+│   │   ├── utils/                       # Deterministic date, currency (cents), and crypto utilities
+│   │   │   ├── date.utils.ts
+│   │   │   ├── currency.utils.ts
+│   │   │   └── crypto.utils.ts
+│   │   └── database/                    # Connection manager, Unit of Work (BEGIN IMMEDIATE), and Migrations
+│   │       ├── sqlite-connection.ts
+│   │       ├── unit-of-work.ts
+│   │       └── migration-runner.ts
+│   ├── modules/                         # Feature-based domain modules (Clean Architecture inside each)
+│   │   ├── auth/                        # Users, Roles, and PIN authorization
+│   │   │   ├── domain/                  # User and Role entities
+│   │   │   └── repositories/            # IUserRepository interface
+│   │   ├── cash-register/               # Registers, Sessions (Open/Close shifts), Cash In/Out
+│   │   │   ├── domain/                  # RegisterSession and CashMovement entities
+│   │   │   └── repositories/            # IRegisterSessionRepository interface & SQLite implementation
+│   │   ├── catalog/                     # Products, Categories, Taxes, Barcode/SKU lookups
+│   │   │   ├── domain/                  # Product and Tax entities
+│   │   │   └── repositories/            # IProductRepository interface & SQLite implementation
+│   │   ├── inventory/                   # Append-only Kardex ledger, stock movements, reconciliation
+│   │   │   ├── domain/                  # InventoryMovement entity
+│   │   │   └── repositories/            # IInventoryRepository interface & SQLite implementation
+│   │   ├── sales/                       # Checkout orchestration, Voiding, Discounts, Payments
+│   │   │   ├── domain/                  # Sale, SaleItem, and SalePayment entities
+│   │   │   ├── dtos/                    # Zod schemas for CheckoutRequestDTO
+│   │   │   ├── repositories/            # ISaleRepository interface & SQLite implementation
+│   │   │   └── use-cases/               # CreateSaleUseCase (Atomic UoW) & VoidSaleUseCase
+│   │   ├── fiscal/                      # Electronic invoicing / DIAN / Equivalent doc queue adapter
+│   │   │   ├── domain/                  # FiscalDocument entity
+│   │   │   └── adapters/                # SQLiteFiscalQueueAdapter
+│   │   └── sync/                        # Transactional Outbox processor, Cloud API client, Conflict resolver
+│   │       ├── domain/                  # SyncOutboxEntry entity
+│   │       ├── repositories/            # ISyncOutboxRepository interface & SQLite implementation
+│   │       └── workers/                 # SyncWorker (asynchronous polling with exponential backoff)
+│   ├── infrastructure/                  # External drivers & concrete hardware/network adapters
+│   │   ├── hardware/                    # ESC/POS Thermal Printer, Cash Drawer (RJ11)
+│   │   │   ├── receipt-printer.interface.ts
+│   │   │   └── escpos-printer.adapter.ts
+│   │   └── http/                        # Typed HTTP client with retry/jitter for cloud synchronization
+│   │       └── sync-http-client.ts
+│   ├── interfaces/                      # Entry points to the backend
+│   │   ├── ipc/                         # Electron IPC typed channels & Zod validation middleware
+│   │   │   ├── ipc-channels.ts
+│   │   │   ├── ipc-router.ts
+│   │   │   └── handlers/
+│   │   └── api/                         # Fastify sync endpoints (for receiving terminal sync payloads)
+│   │       ├── fastify-sync.server.ts
+│   │       └── controllers/
+│   └── main.ts                          # Composition Root (Dependency Injection wiring & lifecycle)
 ├── database/
-│   ├── config/
-│   │   └── sqlite_pragmas.sql           # Connection tuning (WAL mode, foreign keys, synchronous=NORMAL)
-│   ├── ddl/
-│   │   ├── 01_users_roles_shifts.sql    # Module 1: Roles, Users, Registers, Sessions, Cash Movements
-│   │   ├── 02_catalog_inventory.sql     # Module 2: Categories, Taxes, Products, Kardex (inventory_movements)
-│   │   ├── 03_sales_billing.sql         # Module 3: Customers, Sales, Items, Payments, Fiscal Documents
-│   │   ├── 04_sync_outbox.sql           # Module 4: Sync Outbox, Checkpoints
-│   │   └── 05_indexes.sql               # Dedicated Performance, FK & Audit Indexes
-│   ├── migrations/
-│   │   └── v1.0.0_initial_schema.sql    # Consolidated production schema DDL
-│   ├── seeds/
-│   │   ├── 01_roles_admin.sql           # Initial System Roles & Administrator
-│   │   ├── 02_registers_taxes.sql       # Default Register (POS-01) & Tax rates (0%, 19%)
-│   │   ├── 03_catalog_products.sql      # Initial Categories & 5 Products
-│   │   ├── 04_initial_kardex.sql        # Initial Inventory Kardex Balance Entries
-│   │   └── master_seed.sql              # Consolidated Master Seed
-│   └── examples/
-│       └── checkout_transaction.sql     # Production atomic transaction (BEGIN IMMEDIATE ... COMMIT)
-├── docs/
-│   ├── architecture/
-│   │   ├── ARCHITECTURE.md              # In-depth architectural decisions, UUID strategy, precision, Kardex
-│   │   └── SYNC_PATTERNS.md             # Outbox pattern & bi-directional sync specifications with PostgreSQL
-│   └── dictionary/
-│       └── DATA_DICTIONARY.md           # Exhaustive data dictionary (all tables, columns, constraints, bps)
-├── scripts/
-│   ├── setup_database.ps1               # Automated PowerShell bootstrap script for Windows
-│   └── setup_database.sh                # Automated Bash bootstrap script for Linux/macOS
-├── .gitignore                           # Production gitignore (SQLite DBs, WAL journals, logs, OS files)
-└── README.md                            # Main project overview & documentation
+│   ├── config/                          # SQLite connection tuning pragmas
+│   ├── ddl/                             # Modular DDL schemas by business domain
+│   ├── migrations/                      # Versioned SQLite & PostgreSQL schema migrations
+│   │   └── v1.0.0_initial_schema.sql
+│   ├── seeds/                           # Baseline seed data (roles, admin, taxes, products, Kardex)
+│   │   └── master_seed.sql
+│   └── examples/                        # Standalone atomic transaction demonstration
+│       └── checkout_transaction.sql
+├── docs/                                # Technical & architectural specifications
+│   ├── architecture/                    # In-depth architectural decisions & sync patterns
+│   └── dictionary/                      # Database data dictionary
+├── scripts/                             # Bootstrap automation scripts (.ps1 and .sh)
+└── tests/
+    ├── unit/                            # Pure business logic & financial calculation tests
+    │   └── sales-calculation.spec.ts
+    └── integration/                     # In-memory SQLite transaction & sync outbox integration tests
+        └── create-sale-uow.spec.ts
 ```
 
 ---
 
-## 🏗️ Core Architectural Principles
+## 🏛️ Core Architectural Patterns
 
-1. **Offline-First & Multi-Terminal Safe:**
-   - Client-generated UUIDs (`TEXT PRIMARY KEY`) prevent ID collisions across disconnected terminals.
-   - Recommended: **UUID v7** (time-ordered) for B-tree index locality.
-2. **Strict Financial Precision:**
-   - Zero floating-point rounding errors. Monetary amounts stored as `INTEGER` in the smallest currency unit (cents, centavos: \$10.50 $\rightarrow$ `1050`).
-   - Tax rates stored in basis points (`INTEGER`, $1900 = 19.00\%$, $0 = 0\%$).
-3. **Auditability & Kardex Immutability:**
-   - No hard deletes on sales or cash drawer movements.
-   - Append-only inventory ledger (`inventory_movements`) tracking all additions, deductions, returns, and shrinkage.
-4. **Transactional Outbox Pattern:**
-   - Atomic staging of events in `sync_outbox` within the same transaction as business data mutations.
-5. **SQLite Performance & Durability:**
-   - Write-Ahead Logging (`WAL`), `synchronous = NORMAL`, `busy_timeout = 5000`, and `BEGIN IMMEDIATE` transaction semantics.
+### 1. Atomic Unit of Work (`SQLiteUnitOfWork`)
+Complex checkout operations must never leave the database in an inconsistent state. `CreateSaleUseCase` executes within:
+```typescript
+uow.execute((tx) => {
+  saleRepo.saveSale(sale, tx);
+  saleRepo.saveSaleItems(items, tx);
+  saleRepo.saveSalePayments(payments, tx);
+  productRepo.decrementStock(productId, qty, tx);
+  inventoryRepo.recordMovement(kardexEntry, tx);
+  fiscalQueue.enqueue(fiscalDoc, tx);
+  syncOutboxRepo.enqueue(syncEvent, tx);
+});
+```
+*(Uses `better-sqlite3`'s `transaction().immediate()`, which triggers `BEGIN IMMEDIATE ... COMMIT/ROLLBACK` to prevent mid-transaction lock escalation deadlocks).*
+
+### 2. Decoupled Hardware Operations
+Thermal printers and cash drawers run strictly **after** transaction commit via `setImmediate`:
+- A paper jam, out-of-paper sensor, or unplugged USB cable will **never** roll back an already-committed financial transaction.
+
+### 3. Strict Financial Precision
+- All currency amounts are typed as branded `Cents` (`INTEGER`).
+- Tax rates are typed as branded `BasisPoints` (`INTEGER`, e.g., $1900 = 19.00\%$).
+- All floating-point arithmetic is explicitly forbidden at the domain layer.
+
+### 4. Transactional Outbox Pattern
+Every mutating operation automatically produces a pending outbox record. The `SyncWorker` periodically polls `sync_outbox` and replays events to the central PostgreSQL server with exponential backoff and idempotency keys.
 
 ---
 
-## 🚀 Quickstart & Database Initialization
+## 🧪 Testing
 
-### Using Bootstrap Scripts
-- **Windows (PowerShell):**
-  ```powershell
-  .\scripts\setup_database.ps1 -DatabasePath vorapos.db
-  ```
-- **Linux / macOS (Bash):**
-  ```bash
-  chmod +x scripts/setup_database.sh
-  ./scripts/setup_database.sh vorapos.db
-  ```
-
-### Manual Execution with SQLite CLI
 ```bash
-# 1. Apply Schema Migration
-sqlite3 vorapos.db < database/migrations/v1.0.0_initial_schema.sql
+# Run all unit and integration tests
+npm test
 
-# 2. Apply Master Seeds
-sqlite3 vorapos.db < database/seeds/master_seed.sql
-
-# 3. Test Checkout Atomic Transaction
-sqlite3 vorapos.db < database/examples/checkout_transaction.sql
+# Run tests in watch mode
+npm run test:watch
 ```
-
----
-
-## 📚 Technical Documentation
-- [Architecture & Design Decisions](docs/architecture/ARCHITECTURE.md)
-- [Cloud Synchronization Protocol](docs/architecture/SYNC_PATTERNS.md)
-- [Database Data Dictionary](docs/dictionary/DATA_DICTIONARY.md)
